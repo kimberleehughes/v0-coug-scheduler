@@ -1,0 +1,29 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "entry": [
+    "app/globals.css"
+  ],
+  "project": [
+    "app/**/*.{js,jsx,ts,tsx}",
+    "components/**/*.{js,jsx,ts,tsx}",
+    "lib/**/*.{js,ts}",
+    "__tests__/**/*.{js,jsx,ts,tsx}"
+  ],
+  "ignore": [
+    "public/**",
+    "styles/**",
+    "*.config.{js,ts,mjs}",
+    "next-env.d.ts"
+  ],
+  "ignoreDependencies": [
+    "autoprefixer"
+  ],
+  "rules": {
+    "files": "error",
+    "dependencies": "error",
+    "unlisted": "error",
+    "exports": "warn",
+    "types": "error",
+    "duplicates": "error"
+  }
+}
