@@ -1,44 +1,119 @@
+import { z } from 'zod'
+import type {
+  SurveyState,
+  ScheduleState,
+  ChatState,
+  NavigationState,
+  UserPreferences,
+  Message,
+  ScheduleItems,
+} from './schemas'
+
 export const STORAGE_KEYS = {
   USER_PREFERENCES: 'coug_scheduler_preferences',
-  SURVEY_COMPLETED: 'coug_scheduler_onboarded',
-  SCHEDULE_ITEMS: 'coug_scheduler_schedule',
-  NEXT_TASK_ID: 'coug_scheduler_next_id',
-  CHAT_HISTORY: 'coug_scheduler_chat',
+  SURVEY_STATE: 'coug_scheduler_survey_state',
+  SCHEDULE_STATE: 'coug_scheduler_schedule_state',
+  CHAT_STATE: 'coug_scheduler_chat_state',
+  NAVIGATION_STATE: 'coug_scheduler_navigation_state',
 } as const
 
-// localStorage utility functions
-export function saveToStorage<T>(key: string, data: T): void {
+// localStorage utility functions with Zod validation
+export function saveToStorage<T>(
+  key: string,
+  data: T,
+  schema?: z.ZodSchema<T>
+): boolean {
   try {
-    localStorage.setItem(key, JSON.stringify(data))
+    // Validate data if schema provided
+    if (schema) {
+      const validationResult = schema.safeParse(data)
+      if (!validationResult.success) {
+        console.error(
+          `Data validation failed for ${key}:`,
+          validationResult.error
+        )
+        return false
+      }
+    }
+
+    // Transform dates to ISO strings for JSON serialization
+    const serializedData = JSON.stringify(data, (key, value) => {
+      if (value instanceof Date) {
+        return value.toISOString()
+      }
+      return value
+    })
+
+    localStorage.setItem(key, serializedData)
+    return true
   } catch (error) {
-    console.warn(`Failed to save to localStorage: ${key}`, error)
+    console.error(`Failed to save to localStorage (${key}):`, error)
+    return false
   }
 }
 
-export function loadFromStorage<T>(key: string, defaultValue: T): T {
+export function loadFromStorage<T>(
+  key: string,
+  defaultValue: T,
+  schema?: z.ZodSchema<T>
+): T {
   try {
     const item = localStorage.getItem(key)
-    return item ? JSON.parse(item) : defaultValue
+    if (item === null) {
+      return defaultValue
+    }
+
+    const parsed = JSON.parse(item)
+
+    // Validate data if schema provided
+    if (schema) {
+      const validationResult = schema.safeParse(parsed)
+      if (!validationResult.success) {
+        console.warn(
+          `Stored data validation failed for ${key}, using default:`,
+          validationResult.error
+        )
+        return defaultValue
+      }
+      return validationResult.data
+    }
+
+    return parsed as T
   } catch (error) {
-    console.warn(`Failed to load from localStorage: ${key}`, error)
+    console.error(`Failed to load from localStorage (${key}):`, error)
     return defaultValue
   }
 }
 
-export function removeFromStorage(key: string): void {
+export function removeFromStorage(key: string): boolean {
   try {
     localStorage.removeItem(key)
+    return true
   } catch (error) {
-    console.warn(`Failed to remove from localStorage: ${key}`, error)
+    console.error(`Failed to remove from localStorage (${key}):`, error)
+    return false
   }
 }
 
-export function clearAllStorage(): void {
+export function clearAllStorage(): boolean {
   try {
     Object.values(STORAGE_KEYS).forEach((key) => {
       localStorage.removeItem(key)
     })
+    return true
   } catch (error) {
-    console.warn('Failed to clear localStorage', error)
+    console.error('Failed to clear localStorage', error)
+    return false
+  }
+}
+
+export function isLocalStorageAvailable(): boolean {
+  try {
+    const test = '__localStorage_test__'
+    localStorage.setItem(test, test)
+    localStorage.removeItem(test)
+    return true
+  } catch {
+    return false
   }
 }

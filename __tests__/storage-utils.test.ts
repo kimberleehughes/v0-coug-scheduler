@@ -46,15 +46,16 @@ describe('Storage Utils', () => {
     })
 
     it('should handle localStorage errors gracefully', () => {
-      const consoleSpy = jest.spyOn(console, 'warn').mockImplementation()
+      const consoleSpy = jest.spyOn(console, 'error').mockImplementation()
       localStorageMock.setItem.mockImplementationOnce(() => {
         throw new Error('localStorage error')
       })
 
-      saveToStorage('test-key', { data: 'test' })
+      const result = saveToStorage('test-key', { data: 'test' })
 
+      expect(result).toBe(false)
       expect(consoleSpy).toHaveBeenCalledWith(
-        'Failed to save to localStorage: test-key',
+        'Failed to save to localStorage (test-key):',
         expect.any(Error)
       )
       consoleSpy.mockRestore()
@@ -82,14 +83,17 @@ describe('Storage Utils', () => {
     })
 
     it('should return default value when JSON parsing fails', () => {
-      const consoleSpy = jest.spyOn(console, 'warn').mockImplementation()
+      const consoleSpy = jest.spyOn(console, 'error').mockImplementation()
       const defaultValue = { default: true }
       localStorageMock.getItem.mockReturnValueOnce('invalid json')
 
       const result = loadFromStorage('test-key', defaultValue)
 
       expect(result).toEqual(defaultValue)
-      expect(consoleSpy).toHaveBeenCalled()
+      expect(consoleSpy).toHaveBeenCalledWith(
+        'Failed to load from localStorage (test-key):',
+        expect.any(Error)
+      )
       consoleSpy.mockRestore()
     })
   })
@@ -102,14 +106,18 @@ describe('Storage Utils', () => {
     })
 
     it('should handle removal errors gracefully', () => {
-      const consoleSpy = jest.spyOn(console, 'warn').mockImplementation()
+      const consoleSpy = jest.spyOn(console, 'error').mockImplementation()
       localStorageMock.removeItem.mockImplementationOnce(() => {
         throw new Error('Remove error')
       })
 
-      removeFromStorage('test-key')
+      const result = removeFromStorage('test-key')
 
-      expect(consoleSpy).toHaveBeenCalled()
+      expect(result).toBe(false)
+      expect(consoleSpy).toHaveBeenCalledWith(
+        'Failed to remove from localStorage (test-key):',
+        expect.any(Error)
+      )
       consoleSpy.mockRestore()
     })
   })
@@ -124,14 +132,18 @@ describe('Storage Utils', () => {
     })
 
     it('should handle clear errors gracefully', () => {
-      const consoleSpy = jest.spyOn(console, 'warn').mockImplementation()
+      const consoleSpy = jest.spyOn(console, 'error').mockImplementation()
       localStorageMock.removeItem.mockImplementation(() => {
         throw new Error('Clear error')
       })
 
-      clearAllStorage()
+      const result = clearAllStorage()
 
-      expect(consoleSpy).toHaveBeenCalled()
+      expect(result).toBe(false)
+      expect(consoleSpy).toHaveBeenCalledWith(
+        'Failed to clear localStorage',
+        expect.any(Error)
+      )
       consoleSpy.mockRestore()
     })
   })
@@ -139,10 +151,12 @@ describe('Storage Utils', () => {
   describe('STORAGE_KEYS', () => {
     it('should have all required storage keys', () => {
       expect(STORAGE_KEYS.USER_PREFERENCES).toBe('coug_scheduler_preferences')
-      expect(STORAGE_KEYS.SURVEY_COMPLETED).toBe('coug_scheduler_onboarded')
-      expect(STORAGE_KEYS.SCHEDULE_ITEMS).toBe('coug_scheduler_schedule')
-      expect(STORAGE_KEYS.NEXT_TASK_ID).toBe('coug_scheduler_next_id')
-      expect(STORAGE_KEYS.CHAT_HISTORY).toBe('coug_scheduler_chat')
+      expect(STORAGE_KEYS.SURVEY_STATE).toBe('coug_scheduler_survey_state')
+      expect(STORAGE_KEYS.SCHEDULE_STATE).toBe('coug_scheduler_schedule_state')
+      expect(STORAGE_KEYS.CHAT_STATE).toBe('coug_scheduler_chat_state')
+      expect(STORAGE_KEYS.NAVIGATION_STATE).toBe(
+        'coug_scheduler_navigation_state'
+      )
     })
   })
 })
