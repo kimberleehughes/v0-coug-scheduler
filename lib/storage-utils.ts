@@ -108,17 +108,6 @@ export function clearAllStorage(): boolean {
   }
 }
 
-export function isLocalStorageAvailable(): boolean {
-  try {
-    const test = '__localStorage_test__'
-    localStorage.setItem(test, test)
-    localStorage.removeItem(test)
-    return true
-  } catch {
-    return false
-  }
-}
-
 /**
  * Generate or retrieve the unique user ID
  * Creates a new UUID on first access and stores it in localStorage

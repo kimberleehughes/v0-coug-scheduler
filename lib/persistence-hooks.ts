@@ -6,7 +6,6 @@ import {
   ScheduleStateSchema,
   ChatStateSchema,
   NavigationStateSchema,
-  UserPreferencesSchema,
   DEFAULT_MESSAGES,
   DEFAULT_SCHEDULE_ITEMS,
   type SurveyState,
@@ -262,35 +261,5 @@ export function useNavigationState() {
     setCurrentDate,
     setSelectedDay,
     setCurrentView,
-  }
-}
-
-/**
- * Hook for user preferences persistence
- */
-export function useUserPreferences() {
-  const [preferences, setPreferences] =
-    useLocalStorageState<UserPreferences | null>(
-      STORAGE_KEYS.USER_PREFERENCES,
-      null,
-      UserPreferencesSchema.nullable()
-    )
-
-  const updatePreferences = useCallback(
-    (newPreferences: UserPreferences) => {
-      setPreferences(newPreferences)
-    },
-    [setPreferences]
-  )
-
-  const clearPreferences = useCallback(() => {
-    setPreferences(null)
-  }, [setPreferences])
-
-  return {
-    preferences,
-    setPreferences,
-    updatePreferences,
-    clearPreferences,
   }
 }

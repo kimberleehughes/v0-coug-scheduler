@@ -4,7 +4,7 @@ import { getUserId } from './storage-utils'
 const WEBHOOK_URL =
   'https://n8n.opulencefunnels.com/webhook/03f64a11-e4a9-4ca6-b76f-60ecddc6620f'
 
-export interface WebhookPayload {
+interface WebhookPayload {
   userId: string
   messages: Array<Omit<Message, 'timestamp'> & { timestamp: string }>
   userPreferences: UserPreferences | null
@@ -12,7 +12,7 @@ export interface WebhookPayload {
   currentMessage: string
 }
 
-export interface WebhookResponse {
+interface WebhookResponse {
   messages: Array<Omit<Message, 'timestamp'> & { timestamp: string }>
 }
 

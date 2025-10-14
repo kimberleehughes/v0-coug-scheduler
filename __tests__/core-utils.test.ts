@@ -119,7 +119,7 @@ describe('Core Utilities', () => {
       expect(result).toEqual({
         id: 5,
         title: 'Study Math',
-        time: '10:00 - 11:00',
+        time: '10:00 AM - 11:00 AM',
         priority: 'high' as const,
         completed: false,
       })
