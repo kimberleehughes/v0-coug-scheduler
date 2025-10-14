@@ -782,6 +782,8 @@ export default function ScheduleApp() {
             const date = weekDates[index]
             const isSelected = selectedDay === index
             const isToday = date.toDateString() === new Date().toDateString()
+            const dayTasks = scheduleItems[day] || []
+            const hasActiveTasks = dayTasks.length > 0
 
             return (
               <button
@@ -799,8 +801,8 @@ export default function ScheduleApp() {
                 <div className="text-lg font-bold mt-1">{date.getDate()}</div>
                 <div className="flex justify-center mt-1">
                   <div
-                    className={`w-2 h-2 rounded-full ${
-                      Math.random() > 0.5 ? 'bg-primary' : 'bg-muted'
+                    className={`w-2 h-2 rounded-full transition-colors ${
+                      hasActiveTasks ? 'bg-primary' : 'bg-transparent'
                     }`}
                   />
                 </div>
