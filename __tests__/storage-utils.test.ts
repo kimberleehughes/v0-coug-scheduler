@@ -3,6 +3,7 @@ import {
   loadFromStorage,
   removeFromStorage,
   clearAllStorage,
+  getUserId,
   STORAGE_KEYS,
 } from '../lib/storage-utils'
 
@@ -148,8 +149,71 @@ describe('Storage Utils', () => {
     })
   })
 
+  describe('getUserId', () => {
+    it('should generate a new user ID on first call', () => {
+      const mockUUID = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'
+      const cryptoMock = {
+        randomUUID: jest.fn().mockReturnValue(mockUUID)
+      }
+      
+      // Mock crypto object
+      Object.defineProperty(global, 'crypto', {
+        value: cryptoMock,
+        writable: true
+      })
+
+      const userId = getUserId()
+
+      expect(userId).toBe(mockUUID)
+      expect(cryptoMock.randomUUID).toHaveBeenCalled()
+      expect(localStorageMock.setItem).toHaveBeenCalledWith(
+        STORAGE_KEYS.USER_ID,
+        mockUUID
+      )
+    })
+
+    it('should return existing user ID on subsequent calls', () => {
+      const existingId = 'existing-user-id-123'
+      localStorageMock.getItem.mockReturnValueOnce(existingId)
+
+      const userId = getUserId()
+
+      expect(userId).toBe(existingId)
+      expect(localStorageMock.getItem).toHaveBeenCalledWith(STORAGE_KEYS.USER_ID)
+      expect(localStorageMock.setItem).not.toHaveBeenCalled()
+    })
+
+    it('should throw when crypto.randomUUID is not available', () => {
+      // Remove crypto from global
+      Object.defineProperty(global, 'crypto', {
+        value: undefined,
+        writable: true
+      })
+
+      expect(() => getUserId()).toThrow()
+    })
+
+    it('should throw when localStorage fails', () => {
+      localStorageMock.setItem.mockImplementationOnce(() => {
+        throw new Error('localStorage error')
+      })
+
+      const cryptoMock = {
+        randomUUID: jest.fn().mockReturnValue('test-uuid')
+      }
+      
+      Object.defineProperty(global, 'crypto', {
+        value: cryptoMock,
+        writable: true
+      })
+
+      expect(() => getUserId()).toThrow('localStorage error')
+    })
+  })
+
   describe('STORAGE_KEYS', () => {
     it('should have all required storage keys', () => {
+      expect(STORAGE_KEYS.USER_ID).toBe('coug_scheduler_user_id')
       expect(STORAGE_KEYS.USER_PREFERENCES).toBe('coug_scheduler_preferences')
       expect(STORAGE_KEYS.SURVEY_STATE).toBe('coug_scheduler_survey_state')
       expect(STORAGE_KEYS.SCHEDULE_STATE).toBe('coug_scheduler_schedule_state')

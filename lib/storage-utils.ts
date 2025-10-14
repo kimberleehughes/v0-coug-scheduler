@@ -2,6 +2,7 @@ import { z } from 'zod'
 import { migrateData } from './schemas'
 
 export const STORAGE_KEYS = {
+  USER_ID: 'coug_scheduler_user_id',
   USER_PREFERENCES: 'coug_scheduler_preferences',
   SURVEY_STATE: 'coug_scheduler_survey_state',
   SCHEDULE_STATE: 'coug_scheduler_schedule_state',
@@ -116,4 +117,19 @@ export function isLocalStorageAvailable(): boolean {
   } catch {
     return false
   }
+}
+
+/**
+ * Generate or retrieve the unique user ID
+ * Creates a new UUID on first access and stores it in localStorage
+ */
+export function getUserId(): string {
+  const existingId = localStorage.getItem(STORAGE_KEYS.USER_ID)
+  if (existingId) {
+    return existingId
+  }
+
+  const newId = crypto.randomUUID()
+  localStorage.setItem(STORAGE_KEYS.USER_ID, newId)
+  return newId
 }

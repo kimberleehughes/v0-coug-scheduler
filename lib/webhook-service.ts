@@ -1,9 +1,11 @@
 import type { Message, UserPreferences, ScheduleItems } from './schemas'
+import { getUserId } from './storage-utils'
 
 const WEBHOOK_URL =
   'https://n8n.opulencefunnels.com/webhook/03f64a11-e4a9-4ca6-b76f-60ecddc6620f'
 
 export interface WebhookPayload {
+  userId: string
   messages: Array<Omit<Message, 'timestamp'> & { timestamp: string }>
   userPreferences: UserPreferences | null
   schedule: ScheduleItems
@@ -25,6 +27,7 @@ export async function sendChatToWebhook(
 ): Promise<Message[]> {
   try {
     const payload: WebhookPayload = {
+      userId: getUserId(),
       messages: messages.map((msg) => ({
         ...msg,
         // Ensure timestamp is serialized as ISO string
