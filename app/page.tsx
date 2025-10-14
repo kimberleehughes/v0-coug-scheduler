@@ -793,7 +793,7 @@ export default function ScheduleApp() {
                   isSelected
                     ? 'bg-primary text-primary-foreground'
                     : isToday
-                    ? 'bg-secondary/20 text-secondary'
+                    ? 'bg-primary/10 text-primary border-2 border-primary/20'
                     : 'hover:bg-muted'
                 }`}
               >
