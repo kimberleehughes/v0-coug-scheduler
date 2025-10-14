@@ -412,8 +412,8 @@ export default function ScheduleApp() {
 
   if (currentView === 'chat') {
     return (
-      <div className="min-h-screen bg-background flex flex-col max-w-md mx-auto">
-        <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-muted/40 to-muted/20 border-b border-border/50">
+      <div className="h-screen bg-background flex flex-col max-w-md mx-auto">
+        <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-muted/40 to-muted/20 border-b border-border/50 flex-shrink-0">
           <Button
             variant="ghost"
             size="sm"
@@ -443,7 +443,7 @@ export default function ScheduleApp() {
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
           {messages.map((message) => (
             <div
               key={message.id}
@@ -520,7 +520,7 @@ export default function ScheduleApp() {
           )}
         </div>
 
-        <div className="p-4 border-t border-border/50 bg-background">
+        <div className="p-4 border-t border-border/50 bg-background flex-shrink-0">
           <div className="flex items-end gap-2">
             <div className="flex-1 relative">
               <textarea
