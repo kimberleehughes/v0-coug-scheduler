@@ -128,6 +128,7 @@ export const ScheduleItemSchema = z.object({
       'Invalid time format'
     )
     .optional(),
+  dueDate: z.string().optional(),
   priority: PrioritySchema,
   completed: z.boolean(),
 })

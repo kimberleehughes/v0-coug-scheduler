@@ -409,7 +409,7 @@ export default function ScheduleApp() {
       name: task.title,
       startTime,
       endTime,
-      dueDate: '',
+      dueDate: task.dueDate || '',
       priority: task.priority,
     })
     setShowTaskEditor(true)
@@ -441,6 +441,13 @@ export default function ScheduleApp() {
                 delete updatedTask.time
               }
 
+              // Save due date if provided
+              if (taskForm.dueDate) {
+                updatedTask.dueDate = taskForm.dueDate
+              } else {
+                delete updatedTask.dueDate
+              }
+
               return updatedTask
             }
             return task
@@ -459,6 +466,11 @@ export default function ScheduleApp() {
         const startTime12 = formatTime24To12(taskForm.startTime!)
         const endTime12 = formatTime24To12(taskForm.endTime!)
         newTask.time = `${startTime12} - ${endTime12}`
+      }
+
+      // Save due date if provided
+      if (taskForm.dueDate) {
+        newTask.dueDate = taskForm.dueDate
       }
 
       updateScheduleItems((items) => ({
@@ -480,9 +492,21 @@ export default function ScheduleApp() {
     })
   }
 
-  const currentScheduleItems = scheduleItems[DAYS[selectedDay]] || []
-
+  // Filter tasks to only show those that match the current week's dates
   const weekDates = getWeekDates(currentDateObj)
+  const currentSelectedDate = weekDates[selectedDay]
+  const currentDateString = currentSelectedDate.toISOString().split('T')[0] // YYYY-MM-DD format
+
+  const currentScheduleItems = (scheduleItems[DAYS[selectedDay]] || []).filter(
+    (item) => {
+      // If task has no due date, show it (legacy behavior)
+      if (!item.dueDate) {
+        return true
+      }
+      // Only show tasks whose due date matches the currently selected date
+      return item.dueDate === currentDateString
+    }
+  )
 
   if (showSurvey) {
     const currentQuestion = SURVEY_QUESTIONS[currentQuestionIndex]
@@ -1003,7 +1027,17 @@ export default function ScheduleApp() {
             const date = weekDates[index]
             const isSelected = selectedDay === index
             const isToday = date.toDateString() === new Date().toDateString()
-            const dayTasks = scheduleItems[day] || []
+            const dateString = date.toISOString().split('T')[0] // YYYY-MM-DD format
+
+            // Filter tasks for this specific date, same logic as task display
+            const dayTasks = (scheduleItems[day] || []).filter((item) => {
+              // If task has no due date, show it (legacy behavior)
+              if (!item.dueDate) {
+                return true
+              }
+              // Only count tasks whose due date matches this specific date
+              return item.dueDate === dateString
+            })
             const hasActiveTasks = dayTasks.length > 0
 
             return (
