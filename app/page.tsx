@@ -208,11 +208,13 @@ export default function ScheduleApp() {
   function sliderToHourString(value: number, questionId: number): string {
     if (questionId === 1) {
       // Q1: 6am-12am
-      return `${value}:00`
+      const hour24 = `${value}:00`
+      return formatTime24To12(hour24)
     } else {
       // Q2: 9pm-9am (0-12 maps to 21-33)
       const actualHour = (21 + value) % 24
-      return `${actualHour}:00`
+      const hour24 = `${actualHour}:00`
+      return formatTime24To12(hour24)
     }
   }
 
@@ -563,13 +565,13 @@ export default function ScheduleApp() {
                   <span>
                     Start:{' '}
                     {currentQuestionIndex === 0
-                      ? `${sliderValue1[0]}:00`
+                      ? sliderToHourString(sliderValue1[0], 1)
                       : sliderToHourString(sliderValue2[0], 2)}
                   </span>
                   <span>
                     End:{' '}
                     {currentQuestionIndex === 0
-                      ? `${sliderValue1[1]}:00`
+                      ? sliderToHourString(sliderValue1[1], 1)
                       : sliderToHourString(sliderValue2[1], 2)}
                   </span>
                 </div>
