@@ -2,7 +2,7 @@
 
 ## Last Known Working Links
 
-- **Live URL**: https://v0-coug-scheduler.vercel.app/
+- **Live URL**: https://v0-coug-scheduler-one.vercel.app
 - **GitHub URL**: https://github.com/swanzeyb/v0-coug-scheduler
 
 ## 1. Fork Repository
