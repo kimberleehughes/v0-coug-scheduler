@@ -742,7 +742,7 @@ export default function ScheduleApp() {
 
         <div className="p-4 border-t border-border/50 bg-background flex-shrink-0">
           <div className="flex items-end gap-2">
-            <div className="flex-1 relative">
+            <div className="flex flex-1 relative">
               <textarea
                 value={inputText}
                 onChange={(e) => setInputText(e.target.value)}
