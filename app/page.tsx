@@ -20,11 +20,10 @@ import {
 } from 'lucide-react'
 
 // Import Zod types and persistence hooks
-import type { TaskForm, ScheduleItem, Message } from '@/lib/schemas'
+import type { TaskForm, ScheduleItem } from '@/lib/schemas'
 import {
   useSurveyState,
   useScheduleState,
-  useChatState,
   useNavigationState,
 } from '@/lib/persistence-hooks'
 import {
@@ -32,7 +31,7 @@ import {
   formatTime24To12,
   convertTo24Hour,
 } from '@/lib/schemas'
-import { sendChatToWebhook } from '@/lib/webhook-service'
+import { useAIChat } from '@/lib/ai-chat-hook'
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 const MONTHS = [
@@ -144,7 +143,7 @@ export default function ScheduleApp() {
   const { scheduleItems, nextTaskId, updateScheduleItems, incrementTaskId } =
     useScheduleState()
 
-  const { messages, addMessages, setMessages } = useChatState()
+  const { messages, isLoading, error, sendMessage } = useAIChat()
 
   const {
     currentDate,
@@ -163,7 +162,6 @@ export default function ScheduleApp() {
   const [inputText, setInputText] = useState('')
   const [editingTask, setEditingTask] = useState<ScheduleItem | null>(null)
   const [showTaskEditor, setShowTaskEditor] = useState(false)
-  const [isAiThinking, setIsAiThinking] = useState(false)
   const [viewMode, setViewMode] = useState<'cards' | 'todo'>('cards')
   const [taskForm, setTaskForm] = useState<TaskForm>({
     name: '',
@@ -297,56 +295,14 @@ export default function ScheduleApp() {
     setCurrentView('main')
   }
 
-  async function handleSendMessage() {
-    if (!inputText.trim() || isAiThinking) return
+  function handleSendMessage() {
+    if (!inputText.trim() || isLoading) return
 
     const currentMessage = inputText.trim()
-    const userMessage: Message = {
-      id: Date.now(),
-      text: currentMessage,
-      sender: 'user',
-      timestamp: new Date(),
-    }
-
-    // Add user message immediately and clear input
-    addMessages([userMessage])
     setInputText('')
-    setIsAiThinking(true)
 
-    try {
-      // Send to webhook with all context
-      const allMessages = [...messages, userMessage].map((msg) => ({
-        ...msg,
-        timestamp:
-          msg.timestamp instanceof Date
-            ? msg.timestamp
-            : new Date(msg.timestamp),
-      }))
-
-      const updatedMessages = await sendChatToWebhook(
-        allMessages,
-        userPreferences,
-        scheduleItems,
-        currentMessage
-      )
-
-      // Replace the entire messages array with the response from the webhook
-      setMessages(updatedMessages)
-    } catch (error) {
-      console.error('Failed to get AI response:', error)
-
-      // Fallback message if webhook completely fails
-      const fallbackMessage: Message = {
-        id: Date.now() + 1,
-        text: "Go Cougs! I'm having some technical difficulties, but I'm still here to help you succeed!",
-        sender: 'ai',
-        timestamp: new Date(),
-      }
-
-      addMessages([fallbackMessage])
-    } finally {
-      setIsAiThinking(false)
-    }
+    // Send message using AI SDK integration
+    sendMessage({ text: currentMessage })
   }
 
   function handleKeyPress(e: React.KeyboardEvent) {
@@ -695,11 +651,11 @@ export default function ScheduleApp() {
             <div
               key={message.id}
               className={`flex ${
-                message.sender === 'user' ? 'justify-end' : 'justify-start'
+                message.role === 'user' ? 'justify-end' : 'justify-start'
               }`}
             >
               <div className="flex items-start gap-3 max-w-[80%]">
-                {message.sender === 'ai' && (
+                {message.role === 'assistant' && (
                   <div className="w-8 h-8 rounded-full bg-red-700 flex items-center justify-center flex-shrink-0 overflow-hidden">
                     <Image
                       src="/images/butch-cougar.png"
@@ -712,23 +668,21 @@ export default function ScheduleApp() {
                 )}
                 <div
                   className={`rounded-2xl px-4 py-3 ${
-                    message.sender === 'user'
+                    message.role === 'user'
                       ? 'bg-primary text-primary-foreground ml-auto'
                       : 'bg-muted text-foreground'
                   }`}
                 >
-                  <p className="text-sm leading-relaxed">{message.text}</p>
-                  <p className="text-xs opacity-70 mt-1">
-                    {(message.timestamp instanceof Date
-                      ? message.timestamp
-                      : new Date(message.timestamp)
-                    ).toLocaleTimeString([], {
-                      hour: '2-digit',
-                      minute: '2-digit',
+                  <div className="text-sm leading-relaxed whitespace-pre-wrap">
+                    {message.parts?.map((part, index) => {
+                      if (part.type === 'text') {
+                        return <span key={index}>{part.text}</span>
+                      }
+                      return null
                     })}
-                  </p>
+                  </div>
                 </div>
-                {message.sender === 'user' && (
+                {message.role === 'user' && (
                   <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center flex-shrink-0">
                     <span className="text-sm font-medium">You</span>
                   </div>
@@ -737,8 +691,20 @@ export default function ScheduleApp() {
             </div>
           ))}
 
+          {/* Error display */}
+          {error && (
+            <div className="flex justify-center">
+              <div className="rounded-2xl px-4 py-3 bg-red-100 dark:bg-red-900/20 text-red-900 dark:text-red-100 border border-red-200 dark:border-red-800">
+                <div className="flex items-center gap-2">
+                  <AlertCircle className="h-4 w-4" />
+                  <span className="text-sm">{error.message}</span>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Loading indicator when AI is thinking */}
-          {isAiThinking && (
+          {isLoading && (
             <div className="flex justify-start">
               <div className="flex items-start gap-3 max-w-[80%]">
                 <div className="w-8 h-8 rounded-full bg-red-700 flex items-center justify-center flex-shrink-0 overflow-hidden">
@@ -775,17 +741,17 @@ export default function ScheduleApp() {
                 onChange={(e) => setInputText(e.target.value)}
                 onKeyPress={handleKeyPress}
                 placeholder={
-                  isAiThinking
+                  isLoading
                     ? 'Butch is thinking...'
                     : 'Message Butch the Cougar...'
                 }
-                disabled={isAiThinking}
+                disabled={isLoading}
                 className="w-full resize-none rounded-2xl border border-border bg-background px-4 py-3 pr-12 text-sm focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed"
                 rows={1}
               />
               <Button
                 onClick={handleSendMessage}
-                disabled={!inputText.trim() || isAiThinking}
+                disabled={!inputText.trim() || isLoading}
                 size="sm"
                 className="absolute right-2 bottom-2 h-8 w-8 p-0 rounded-full"
               >
