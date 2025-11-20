@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import Image from 'next/image'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -186,6 +186,18 @@ export default function ScheduleApp() {
   const [followUpText, setFollowUpText] = useState('')
   const [showFollowUp, setShowFollowUp] = useState(false)
   const [pendingAnswer, setPendingAnswer] = useState<string>('')
+
+  // Chat auto-scroll functionality
+  const messagesEndRef = useRef<HTMLDivElement>(null)
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }
+
+  // Auto-scroll when messages change or loading state changes
+  useEffect(() => {
+    scrollToBottom()
+  }, [messages, isLoading])
 
   function calculateSuccessPercentage() {
     const allTasks = Object.values(scheduleItems).flat()
@@ -845,6 +857,7 @@ export default function ScheduleApp() {
               </div>
             </div>
           )}
+          <div ref={messagesEndRef} />
         </div>
 
         <div className="p-4 border-t border-border/50 bg-background flex-shrink-0">
