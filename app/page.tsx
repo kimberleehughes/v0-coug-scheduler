@@ -306,8 +306,18 @@ export default function ScheduleApp() {
   async function handleBackToMain() {
     // Only generate schedule if there's a meaningful conversation (more than just the opening message)
     if (messages.length > 1) {
+      console.time('frontend-schedule-generation')
+      console.log(
+        '🎯 Frontend: Starting schedule generation with',
+        messages.length,
+        'messages'
+      )
+
       setIsGeneratingSchedule(true)
       try {
+        console.time('fetch-api-call')
+        console.log('📡 Frontend: Making API call to /api/generate-schedule')
+
         // Call the generate-schedule endpoint
         const response = await fetch('/api/generate-schedule', {
           method: 'POST',
@@ -315,9 +325,18 @@ export default function ScheduleApp() {
           body: JSON.stringify({ messages }),
         })
 
+        console.timeEnd('fetch-api-call')
+        console.log('📡 Frontend: API call completed, status:', response.status)
+
+        console.time('response-parsing')
         const data = await response.json()
+        console.timeEnd('response-parsing')
+
+        console.log('📦 Frontend: Response data success:', data.success)
 
         if (data.success && data.schedule) {
+          console.time('schedule-processing')
+
           // Get current week dates
           const weekDates = getWeekDates(currentDateObj)
 
@@ -343,12 +362,17 @@ export default function ScheduleApp() {
           for (let i = 0; i < totalNewTasks; i++) {
             incrementTaskId()
           }
+
+          console.timeEnd('schedule-processing')
+          console.log('✅ Frontend: Schedule processing completed')
         }
       } catch (error) {
         // Fail silently as requested
-        console.error('Failed to generate schedule:', error)
+        console.error('❌ Frontend: Failed to generate schedule:', error)
       } finally {
         setIsGeneratingSchedule(false)
+        console.timeEnd('frontend-schedule-generation')
+        console.log('🏁 Frontend: Schedule generation process finished')
       }
     }
 
