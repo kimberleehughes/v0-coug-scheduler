@@ -196,6 +196,7 @@ export const ScheduleStateSchema = z.object({
 export const ChatStateSchema = z.object({
   version: z.string(),
   messages: z.array(MessageSchema),
+  onboardingCompleted: z.boolean().default(false),
 })
 
 export const NavigationStateSchema = z.object({

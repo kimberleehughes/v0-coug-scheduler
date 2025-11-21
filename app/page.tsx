@@ -25,6 +25,7 @@ import {
   useSurveyState,
   useScheduleState,
   useNavigationState,
+  useChatState,
 } from '@/lib/persistence-hooks'
 import {
   processUserPreferences,
@@ -149,6 +150,12 @@ export default function ScheduleApp() {
     useScheduleState()
 
   const {
+    messages: chatMessages,
+    onboardingCompleted,
+    setOnboardingCompleted,
+  } = useChatState()
+
+  const {
     currentDate,
     selectedDay,
     currentView,
@@ -160,7 +167,10 @@ export default function ScheduleApp() {
   // Track chat session - changes each time chat opens to start fresh
   const [chatSessionKey, setChatSessionKey] = useState<number>(0)
 
-  const { messages, isLoading, error, sendMessage } = useAIChat(chatSessionKey)
+  const { messages, isLoading, error, sendMessage } = useAIChat(
+    chatSessionKey,
+    onboardingCompleted
+  )
 
   // Ensure currentDate is always a Date object
   const currentDateObj =
@@ -378,6 +388,11 @@ export default function ScheduleApp() {
 
           console.timeEnd('schedule-processing')
           console.log('✅ Frontend: Schedule processing completed')
+
+          // Mark onboarding as completed after first schedule generation
+          if (!onboardingCompleted) {
+            setOnboardingCompleted(true)
+          }
         }
       } catch (error) {
         // Fail silently as requested
@@ -777,11 +792,13 @@ export default function ScheduleApp() {
             <div
               key={message.id}
               className={`flex ${
-                message.role === 'user' ? 'justify-end' : 'justify-start'
+                (message.role as string) === 'user'
+                  ? 'justify-end'
+                  : 'justify-start'
               }`}
             >
               <div className="flex items-start gap-3 max-w-[80%]">
-                {message.role === 'assistant' && (
+                {(message.role as string) === 'assistant' && (
                   <div className="w-8 h-8 rounded-full bg-red-700 flex items-center justify-center flex-shrink-0 overflow-hidden">
                     <Image
                       src="/images/butch-cougar.png"
@@ -794,21 +811,22 @@ export default function ScheduleApp() {
                 )}
                 <div
                   className={`rounded-2xl px-4 py-3 ${
-                    message.role === 'user'
+                    (message.role as string) === 'user'
                       ? 'bg-primary text-primary-foreground ml-auto'
                       : 'bg-muted text-foreground'
                   }`}
                 >
                   <div className="text-sm leading-relaxed whitespace-pre-wrap">
-                    {message.parts?.map((part, index) => {
-                      if (part.type === 'text') {
-                        return <span key={index}>{part.text}</span>
-                      }
-                      return null
-                    })}
+                    {(message as any).content ||
+                      message.parts?.map((part, index) => {
+                        if (part.type === 'text') {
+                          return <span key={index}>{part.text}</span>
+                        }
+                        return null
+                      })}
                   </div>
                 </div>
-                {message.role === 'user' && (
+                {(message.role as string) === 'user' && (
                   <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center flex-shrink-0">
                     <span className="text-sm font-medium">You</span>
                   </div>

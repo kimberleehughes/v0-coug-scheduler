@@ -35,6 +35,7 @@ const DEFAULT_SCHEDULE_STATE: ScheduleState = {
 const DEFAULT_CHAT_STATE: ChatState = {
   version: '1.0.0',
   messages: DEFAULT_MESSAGES,
+  onboardingCompleted: false,
 }
 
 /**
@@ -210,6 +211,16 @@ export function useChatState() {
     [setChatState]
   )
 
+  const setOnboardingCompleted = useCallback(
+    (completed: boolean) => {
+      setChatState((prev) => ({
+        ...prev,
+        onboardingCompleted: completed,
+      }))
+    },
+    [setChatState]
+  )
+
   return {
     ...chatState,
     setChatState,
@@ -217,6 +228,7 @@ export function useChatState() {
     addMessages,
     clearMessages,
     setMessages,
+    setOnboardingCompleted,
   }
 }
 

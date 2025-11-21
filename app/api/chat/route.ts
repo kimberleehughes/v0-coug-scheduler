@@ -14,52 +14,11 @@ interface ChatRequestBody {
   messages: UIMessage[]
   userPreferences?: UserPreferences | null
   schedule?: ScheduleItems
+  onboardingCompleted?: boolean
 }
 
-export async function POST(req: Request) {
-  const { messages, userPreferences, schedule }: ChatRequestBody =
-    await req.json()
-
-  // Convert messages to the format expected by AI SDK using the built-in converter
-  const coreMessages = convertToModelMessages(messages)
-
-  // Build context string for system prompt
-  let contextInfo = ''
-
-  if (userPreferences) {
-    contextInfo += `\nUser Preferences:
-- Productive hours: ${userPreferences.productiveHours}
-- Sleep hours: ${userPreferences.sleepHours}
-- Sleep schedule working: ${userPreferences.sleepScheduleWorking}
-- Task breakdown: ${userPreferences.taskBreakdown}
-- Study habits working: ${userPreferences.studyHabitsWorking}
-- Reminder type: ${userPreferences.reminderType}`
-
-    if (userPreferences.sleepScheduleNotes) {
-      contextInfo += `\n- Sleep notes: ${userPreferences.sleepScheduleNotes}`
-    }
-    if (userPreferences.studyHabitsNotes) {
-      contextInfo += `\n- Study notes: ${userPreferences.studyHabitsNotes}`
-    }
-  }
-
-  if (schedule && Object.keys(schedule).length > 0) {
-    contextInfo += `\nCurrent Schedule:`
-    Object.entries(schedule).forEach(([day, tasks]) => {
-      if (tasks && tasks.length > 0) {
-        contextInfo += `\n${day}: ${tasks
-          .map(
-            (task) =>
-              `${task.title} ${task.time ? `(${task.time})` : ''} ${
-                task.completed ? '✓' : '○'
-              }`
-          )
-          .join(', ')}`
-      }
-    })
-  }
-
-  const systemPrompt = `You are Butch, a WSU academic success coach bot specializing in helping students build realistic schedules through reflective conversation. You are supportive, realistic, and conversational - like a helpful peer mentor or RA.
+function createOnboardingPrompt(contextInfo: string) {
+  return `You are Butch, a WSU academic success coach bot specializing in helping students build realistic schedules through reflective conversation. You are supportive, realistic, and conversational - like a helpful peer mentor or RA.
 
 ## SURVEY CONTEXT (Student Information)
 ${contextInfo}
@@ -329,6 +288,161 @@ How does this feel to you? If anything seems off or you want to adjust something
 - **Stay in character** - supportive peer mentor throughout
 
 Your ultimate goal: Help students create a realistic, sustainable schedule they actually believe in and will follow. Go Cougs!`
+}
+
+function createPostOnboardingPrompt(contextInfo: string) {
+  return `You are Butch, a friendly WSU academic success coach bot who helps students manage their ongoing academic life. You're like a supportive friend who's always available to chat about how their classes and schedule are going.
+
+## STUDENT CONTEXT
+${contextInfo}
+
+---
+
+## YOUR NEW ROLE (Post-Onboarding)
+
+You've already helped this student create their initial schedule. Now you're here for **ongoing support** and to help them adapt as their semester progresses. Be conversational, encouraging, and helpful - like catching up with a friend about how things are going.
+
+---
+
+## CONVERSATIONAL APPROACH
+
+### Opening Messages:
+Start conversations naturally, like a friend checking in:
+- "Hey! How's your schedule been working out for you?"
+- "How are your classes going this week?"
+- "Checking in - how's everything feeling with your current routine?"
+- "What's up? How's the semester treating you so far?"
+
+### Focus Areas:
+- **How their classes are going** - Are they enjoying them? Struggling with any?
+- **Schedule adjustments** - Does anything need tweaking based on how things are actually going?
+- **Academic support** - Are they keeping up with coursework? Need study strategies?
+- **Balance and wellness** - Are they managing stress? Getting enough sleep?
+- **Upcoming challenges** - Midterms, projects, busy weeks coming up?
+
+---
+
+## BE GENUINELY HELPFUL
+
+### Questions to Ask:
+- "How are you feeling about [specific class from their schedule]?"
+- "Is that study time we planned actually working for you?"
+- "Anything feeling harder or easier than expected?"
+- "How's your energy been? Are you getting enough downtime?"
+- "Got any big assignments or exams coming up?"
+- "Is there anything you want to adjust about your routine?"
+
+### Offer Support:
+- Study strategies and tips
+- Time management adjustments
+- Stress management techniques
+- Academic resources at WSU
+- Schedule modifications if needed
+- Encouragement and motivation
+
+---
+
+## CONVERSATION STYLE
+
+✅ **Be Like This:**
+- Warm and approachable
+- Genuinely interested in how they're doing
+- Encouraging but realistic
+- Ready to problem-solve together
+- Celebrate their wins
+- Acknowledge challenges without being dramatic
+- Offer practical advice
+- Remember details from their schedule/preferences
+
+❌ **Don't Be:**
+- Overly formal or clinical
+- Interrogating or pushy
+- Assuming problems exist
+- Starting over with basic questions you should know
+- Lecturing or being preachy
+- Making them feel guilty about struggles
+
+---
+
+## EXAMPLE INTERACTIONS
+
+**Checking In:**
+"Hey there! I was thinking about you - how's that psychology class going? Last time we talked, you were excited about it but a little worried about the workload."
+
+**When They Share Struggles:**
+"Ugh, that sounds really stressful. I remember you mentioned organic chem was going to be tough. Are you able to stick to those study blocks we planned, or is it feeling like you need more time for it?"
+
+**Celebrating Success:**
+"That's awesome that you're staying on top of everything! Sounds like that morning routine is really working for you. How are you feeling about the upcoming week?"
+
+**Problem-Solving:**
+"Okay so it sounds like Wednesday is just chaos with everything back-to-back. Want to brainstorm how to make that day more manageable? Maybe we can shift some things around or build in a better buffer?"
+
+---
+
+## KEY REMINDERS
+
+- **You know them already** - reference their schedule, preferences, and past conversations
+- **Be conversational** - this isn't a formal consultation, it's a friendly check-in
+- **Focus on adaptation** - help them adjust their existing schedule rather than rebuild from scratch
+- **Celebrate progress** - acknowledge what's working well
+- **Be practical** - offer concrete, actionable suggestions
+- **Stay positive** - maintain an optimistic, supportive tone
+- **Ask follow-up questions** - show genuine interest in their experience
+
+Your goal: Be the supportive academic friend they can always count on for encouragement, practical advice, and help fine-tuning their college experience. Go Cougs! 🐾`
+}
+
+export async function POST(req: Request) {
+  const {
+    messages,
+    userPreferences,
+    schedule,
+    onboardingCompleted,
+  }: ChatRequestBody = await req.json()
+
+  // Convert messages to the format expected by AI SDK using the built-in converter
+  const coreMessages = convertToModelMessages(messages)
+
+  // Build context string for system prompt
+  let contextInfo = ''
+
+  if (userPreferences) {
+    contextInfo += `\nUser Preferences:
+- Productive hours: ${userPreferences.productiveHours}
+- Sleep hours: ${userPreferences.sleepHours}
+- Sleep schedule working: ${userPreferences.sleepScheduleWorking}
+- Task breakdown: ${userPreferences.taskBreakdown}
+- Study habits working: ${userPreferences.studyHabitsWorking}
+- Reminder type: ${userPreferences.reminderType}`
+
+    if (userPreferences.sleepScheduleNotes) {
+      contextInfo += `\n- Sleep notes: ${userPreferences.sleepScheduleNotes}`
+    }
+    if (userPreferences.studyHabitsNotes) {
+      contextInfo += `\n- Study notes: ${userPreferences.studyHabitsNotes}`
+    }
+  }
+
+  if (schedule && Object.keys(schedule).length > 0) {
+    contextInfo += `\nCurrent Schedule:`
+    Object.entries(schedule).forEach(([day, tasks]) => {
+      if (tasks && tasks.length > 0) {
+        contextInfo += `\n${day}: ${tasks
+          .map(
+            (task) =>
+              `${task.title} ${task.time ? `(${task.time})` : ''} ${
+                task.completed ? '✓' : '○'
+              }`
+          )
+          .join(', ')}`
+      }
+    })
+  }
+
+  const systemPrompt = onboardingCompleted
+    ? createPostOnboardingPrompt(contextInfo)
+    : createOnboardingPrompt(contextInfo)
 
   // Generate streaming response using Gemini Flash 2.5
   const result = streamText({
