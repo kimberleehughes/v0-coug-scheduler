@@ -11,7 +11,7 @@ Needed:
 - ~~Can make a task that starts before it ends
 - ~~Remove feature buttons
 - ~~Survey button, starts at end
-- Percent complete of the day
+- ~~Percent complete of the day
 - Says butch, its fred the lion bot
 - Go backwards on survey
 - Screen 3
