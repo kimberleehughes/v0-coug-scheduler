@@ -31,6 +31,7 @@ import {
   processUserPreferences,
   formatTime24To12,
   convertTo24Hour,
+  validateTaskForm,
 } from '@/lib/schemas'
 import { useAIChat } from '@/lib/ai-chat-hook'
 import {
@@ -189,6 +190,8 @@ export default function ScheduleApp() {
     dueDate: '',
     priority: 'medium',
   })
+  const [validationErrors, setValidationErrors] = useState<string[]>([])
+  const [taskFormErrors, setTaskFormErrors] = useState<string[]>([])
 
   // Survey-specific UI state
   const [sliderValue1, setSliderValue1] = useState<number[]>([9, 17])
@@ -462,6 +465,7 @@ export default function ScheduleApp() {
 
   function handleTaskClick(task: ScheduleItem) {
     setEditingTask(task)
+    setTaskFormErrors([]) // Clear any previous errors
 
     // Parse time if it exists
     let startTime = ''
@@ -486,6 +490,16 @@ export default function ScheduleApp() {
   }
 
   function handleSaveTask() {
+    // Validate the task form first
+    const validation = validateTaskForm(taskForm)
+    if (!validation.success) {
+      setTaskFormErrors(validation.errors)
+      return // Don't save if there are validation errors
+    }
+
+    // Clear any previous errors
+    setTaskFormErrors([])
+
     const dayKey = DAYS[selectedDay]
     const hasTimeRange = taskForm.startTime && taskForm.endTime
 
@@ -553,6 +567,7 @@ export default function ScheduleApp() {
 
     setShowTaskEditor(false)
     setEditingTask(null)
+    setTaskFormErrors([])
     setTaskForm({
       name: '',
       startTime: '',
@@ -927,6 +942,25 @@ export default function ScheduleApp() {
         </div>
 
         <div className="space-y-6">
+          {/* Display validation errors */}
+          {taskFormErrors.length > 0 && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+              <div className="flex items-start">
+                <AlertCircle className="w-4 h-4 text-red-500 mt-0.5 mr-2 flex-shrink-0" />
+                <div className="text-sm text-red-700">
+                  <p className="font-medium mb-1">
+                    Please fix the following errors:
+                  </p>
+                  <ul className="list-disc list-inside space-y-1">
+                    {taskFormErrors.map((error, index) => (
+                      <li key={index}>{error}</li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div>
             <label className="text-sm font-medium text-foreground mb-2 block">
               Task Name
@@ -1323,6 +1357,7 @@ export default function ScheduleApp() {
               e.preventDefault()
               e.stopPropagation()
               setEditingTask(null)
+              setTaskFormErrors([])
               setTaskForm({
                 name: '',
                 startTime: '',

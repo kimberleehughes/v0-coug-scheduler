@@ -7,8 +7,8 @@ Needed:
 - ~~Should tell the user they're done
 - ~~Have more of a conversation of the homework hours
 - ~~Switch to different prompt after onboarding
-- Show persistent history
-- Can make a task that starts before it ends
+- Won't do, out of scope: ~~Show persistent history
+- ~~Can make a task that starts before it ends
 - Remove feature buttons
 - Survey button, starts at end
 - Percent complete of the day
